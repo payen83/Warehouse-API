@@ -1,0 +1,209 @@
+{
+	"info": {
+		"_postman_id": "fa22fc8f-a354-4fce-af98-2fc0b711cfbc",
+		"name": "Warehouse API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Warehouse Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"payen83\",\n  \"password\": \"abc123\"\n}"
+				},
+				"url": {
+					"raw": "https://nre.appsmalaya.com/warehouse/api/login",
+					"protocol": "https",
+					"host": [
+						"nre",
+						"appsmalaya",
+						"com"
+					],
+					"path": [
+						"warehouse",
+						"api",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Warehouse Signup",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"along81\",\n  \"email\": \"along@gmail.com\",\n  \"password\": \"abc123\",\n  \"name\": \"Fazarain Mohd Ihsan\"\n}"
+				},
+				"url": {
+					"raw": "https://nre.appsmalaya.com/warehouse/api/signup",
+					"protocol": "https",
+					"host": [
+						"nre",
+						"appsmalaya",
+						"com"
+					],
+					"path": [
+						"warehouse",
+						"api",
+						"signup"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Warehouse Create Inventory",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"user_id\": 3,\n\"token\": \"8c48a6445a0f2aad9f717ee6ae580bb05065e051a2506e3adc89370e988f863a\",\n\"name\": \"HP Deskjet 2676\",\n\"category\": \"Electronics\",\n\"serial_number\": \"HP009878737\",\n\"description\": \"HP Deskjet Printer 2676\"\n}"
+				},
+				"url": {
+					"raw": "https://nre.appsmalaya.com/warehouse/api/create-inventory",
+					"protocol": "https",
+					"host": [
+						"nre",
+						"appsmalaya",
+						"com"
+					],
+					"path": [
+						"warehouse",
+						"api",
+						"create-inventory"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Warehouse Get All Inventory",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://nre.appsmalaya.com/warehouse/api/get-all-inventory",
+					"protocol": "https",
+					"host": [
+						"nre",
+						"appsmalaya",
+						"com"
+					],
+					"path": [
+						"warehouse",
+						"api",
+						"get-all-inventory"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Warehouse Delete Inventory",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"user_id\": 3,\n\"item_id\": 1,\n\"token\": \"8c48a6445a0f2aad9f717ee6ae580bb05065e051a2506e3adc89370e988f863a\"\n}"
+				},
+				"url": {
+					"raw": "https://nre.appsmalaya.com/warehouse/api/delete-inventory",
+					"protocol": "https",
+					"host": [
+						"nre",
+						"appsmalaya",
+						"com"
+					],
+					"path": [
+						"warehouse",
+						"api",
+						"delete-inventory"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Warehouse Update Inventory",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"user_id\": 3,\n\"item_id\": 2,\n\"name\": \"HP Deskjet 12345\",\n\"description\":\"test description\",\n\"serial_number\": \"HYTT676655\",\n\"token\": \"8c48a6445a0f2aad9f717ee6ae580bb05065e051a2506e3adc89370e988f863a\",\n\"status\": \"active\"\n}"
+				},
+				"url": {
+					"raw": "https://nre.appsmalaya.com/warehouse/api/update-inventory",
+					"protocol": "https",
+					"host": [
+						"nre",
+						"appsmalaya",
+						"com"
+					],
+					"path": [
+						"warehouse",
+						"api",
+						"update-inventory"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Warehouse Get Inventory by Serial Number",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://nre.appsmalaya.com/warehouse/api/inventory/serial/HP009878737/user/3/8c48a6445a0f2aad9f717ee6ae580bb05065e051a2506e3adc89370e988f863a",
+					"protocol": "https",
+					"host": [
+						"nre",
+						"appsmalaya",
+						"com"
+					],
+					"path": [
+						"warehouse",
+						"api",
+						"inventory",
+						"serial",
+						"HP009878737",
+						"user",
+						"3",
+						"8c48a6445a0f2aad9f717ee6ae580bb05065e051a2506e3adc89370e988f863a"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
