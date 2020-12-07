@@ -37,5 +37,5 @@ created int
 ); 
 ```
 8. Download and install Postman, make sure you sign up and log in.
-9. Open Postman, click on import, then choose ```nre_api.json``` in \helpdesk folder
+9. Open Postman, click on import, then choose ```Warehouse API.postman_collection.json``` in \warehouse folder
 10. Run and test API!
