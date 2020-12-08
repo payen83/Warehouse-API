@@ -2,18 +2,26 @@
 require 'config.php';
 require 'Slim/Slim.php';
 
+
+
 \Slim\Slim::registerAutoloader();
 $app = new \Slim\Slim();
 
+$app->get('/inventory/serial/:serial_number/user/:user_id/:token','getInventory'); /* Inventory  */
+$app->post('/create-inventory','createInventory'); /* Aduan  */
+$app->get('/get-all-inventory','getAllInventory'); /* Aduan  */
 $app->post('/login','login'); /* User login */
 $app->post('/signup','signup'); /* User Signup  */
-$app->get('/getFeed','getFeed'); /* User Feeds  */
-$app->post('/feed','feed'); /* User Feeds  */
-$app->post('/feedUpdate','feedUpdate'); /* User Feeds  */
-$app->post('/feedDelete','feedDelete'); /* User Feeds  */
-$app->post('/getImages', 'getImages');
+$app->post('/delete-inventory','deleteInventory'); /*  DeleteInventory  */
+$app->post('/update-inventory','updateInventory'); /* Aduan */
 
-
+// $app->post('/updateAduan','updateAduan'); /* Aduan  */
+// $app->post('/getImages', 'getImages');
+// $app->post('/deleteAduan','deleteAduan'); /*  Aduan  */
+// $app->post('/getAduan','getAduan'); /* Aduan  */
+// $app->post('/createAduan','createAduan'); /* Aduan  */
+// $app->get('/getAduanAll','getAduanAll'); /* Aduan  */
+$app->get('/aduan/user/:user_id/:token','getAduan2'); /* Aduan  */
 $app->run();
 
 /************************* USER LOGIN *************************************/
@@ -27,7 +35,7 @@ function login() {
         
         $db = getDB();
         $userData ='';
-        $sql = "SELECT user_id, name, email, username FROM users WHERE (username=:username or email=:username) and password=:password ";
+        $sql = "SELECT user_id, name, email, username, role FROM users WHERE (username=:username or email=:username) and password=:password ";
         $stmt = $db->prepare($sql);
         $stmt->bindParam("username", $data->username, PDO::PARAM_STR);
         $password=hash('sha256',$data->password);
@@ -66,18 +74,19 @@ function signup() {
     $name=$data->name;
     $username=$data->username;
     $password=$data->password;
-    
+    $role="user";
+
     try {
         
         $username_check = preg_match('~^[A-Za-z0-9_]{3,20}$~i', $username);
         $email_check = preg_match('~^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.([a-zA-Z]{2,4})$~i', $email);
         $password_check = preg_match('~^[A-Za-z0-9!@#$%^&*()_]{6,20}$~i', $password);
         
-        echo $email_check.'<br/>'.$email;
+        //echo $email_check.'<br/>'.$email;
         
         if (strlen(trim($username))>0 && strlen(trim($password))>0 && strlen(trim($email))>0 && $email_check>0 && $username_check>0 && $password_check>0)
         {
-            echo 'here';
+            //echo 'here';
             $db = getDB();
             $userData = '';
             $sql = "SELECT user_id FROM users WHERE username=:username or email=:email";
@@ -91,13 +100,14 @@ function signup() {
             {
                 
                 /*Inserting user values*/
-                $sql1="INSERT INTO users(username,password,email,name)VALUES(:username,:password,:email,:name)";
+                $sql1="INSERT INTO users(username,password,email,name,role)VALUES(:username,:password,:email,:name,:role)";
                 $stmt1 = $db->prepare($sql1);
                 $stmt1->bindParam("username", $username,PDO::PARAM_STR);
                 $password=hash('sha256',$data->password);
                 $stmt1->bindParam("password", $password,PDO::PARAM_STR);
                 $stmt1->bindParam("email", $email,PDO::PARAM_STR);
                 $stmt1->bindParam("name", $name,PDO::PARAM_STR);
+                $stmt1->bindParam("role", $role,PDO::PARAM_STR);
                 $stmt1->execute();
                 
                 $userData=internalUserDetails($email);
@@ -195,16 +205,99 @@ function internalUserDetails($input) {
     
 }
 
-function getFeed(){
-  
+function getInventory($serial_number, $user_id, $token) {
+
+    $request = \Slim\Slim::getInstance()->request();
+    //$user_id = $args['user_id'];
+    //$user_id = $app->request->get('user');
+    // $token = $args['token'];
+    //$token = $app->request->get('token');
+    $lastCreated = null;
+    $systemToken=apiToken($user_id);
    
+    try {
+         
+        if($systemToken == $token){
+            $feedData = '';
+            $db = getDB();
+            
+            $sql = "SELECT * FROM inventory WHERE serial_number=:serial_number ORDER BY item_id";
+            $stmt = $db->prepare($sql);
+            // $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam("serial_number", $serial_number, PDO::PARAM_STR);
+            $stmt->execute();
+            $feedData = $stmt->fetchAll(PDO::FETCH_OBJ);
+           
+            $db = null;
+
+            if($feedData)
+            echo '{"feedData": ' . json_encode($feedData) . '}';
+            else
+            echo '{"feedData": ""}';
+        } else{
+            echo '{"error":{"text":"No access", "user":' . $user_id .'}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+
+}
+
+function getAduan2($user_id, $token) {
+
+    $request = \Slim\Slim::getInstance()->request();
+    //$user_id = $args['user_id'];
+    //$user_id = $app->request->get('user');
+    // $token = $args['token'];
+    //$token = $app->request->get('token');
+    $lastCreated = null;
+    $systemToken=apiToken($user_id);
+   
+    try {
+         
+        if($systemToken == $token){
+            $feedData = '';
+            $db = getDB();
+            if($lastCreated){
+                $sql = "SELECT * FROM aduan WHERE user_id_fk=:user_id AND created < :lastCreated ORDER BY aduan_id DESC LIMIT 5";
+                $stmt = $db->prepare($sql);
+                $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $stmt->bindParam("lastCreated", $lastCreated, PDO::PARAM_STR);
+            }
+            else{
+                $sql = "SELECT * FROM aduan WHERE user_id_fk=:user_id ORDER BY aduan_id DESC LIMIT 5";
+                $stmt = $db->prepare($sql);
+                $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            $feedData = $stmt->fetchAll(PDO::FETCH_OBJ);
+           
+            $db = null;
+
+            if($feedData)
+            echo '{"feedData": ' . json_encode($feedData) . '}';
+            else
+            echo '{"feedData": ""}';
+        } else{
+            echo '{"error":{"text":"No access"}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+
+}
+
+/* ### Get all aduan ### */
+function getAllInventory(){
     try {
          
         if(1){
             $feedData = '';
             $db = getDB();
           
-                $sql = "SELECT * FROM feed  ORDER BY feed_id DESC LIMIT 15";
+                $sql = "SELECT * FROM inventory ORDER BY item_id DESC LIMIT 15";
                 $stmt = $db->prepare($sql);
                 $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
                 $stmt->bindParam("lastCreated", $lastCreated, PDO::PARAM_STR);
@@ -228,7 +321,39 @@ function getFeed(){
 
 }
 
-function feed(){
+/* ### Get all aduan ### */
+function getAduanAll(){
+    try {
+         
+        if(1){
+            $feedData = '';
+            $db = getDB();
+          
+                $sql = "SELECT * FROM aduan ORDER BY aduan_id DESC LIMIT 15";
+                $stmt = $db->prepare($sql);
+                $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $stmt->bindParam("lastCreated", $lastCreated, PDO::PARAM_STR);
+          
+            $stmt->execute();
+            $feedData = $stmt->fetchAll(PDO::FETCH_OBJ);
+           
+            $db = null;
+
+            if($feedData)
+            echo '{"feedData": ' . json_encode($feedData) . '}';
+            else
+            echo '{"feedData": ""}';
+        } else{
+            echo '{"error":{"text":"No access"}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+
+}
+
+function getAduan(){
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
     $user_id=$data->user_id;
@@ -242,13 +367,13 @@ function feed(){
             $feedData = '';
             $db = getDB();
             if($lastCreated){
-                $sql = "SELECT * FROM feed WHERE user_id_fk=:user_id AND created < :lastCreated ORDER BY feed_id DESC LIMIT 5";
+                $sql = "SELECT * FROM aduan WHERE user_id_fk=:user_id AND created < :lastCreated ORDER BY aduan_id DESC LIMIT 5";
                 $stmt = $db->prepare($sql);
                 $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
                 $stmt->bindParam("lastCreated", $lastCreated, PDO::PARAM_STR);
             }
             else{
-                $sql = "SELECT * FROM feed WHERE user_id_fk=:user_id ORDER BY feed_id DESC LIMIT 5";
+                $sql = "SELECT * FROM aduan WHERE user_id_fk=:user_id ORDER BY aduan_id DESC LIMIT 5";
                 $stmt = $db->prepare($sql);
                 $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
             }
@@ -271,13 +396,17 @@ function feed(){
 
 }
 
-function feedUpdate(){
+function createInventory(){
 
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
     $user_id=$data->user_id;
+    $serial_number=$data->serial_number;
+    $name=$data->name;
+    $category=$data->category;
+    $description=$data->description;
     $token=$data->token;
-    $feed=$data->feed;
+    $status="active";
     
     $systemToken=apiToken($user_id);
    
@@ -288,17 +417,70 @@ function feedUpdate(){
             
             $feedData = '';
             $db = getDB();
-            $sql = "INSERT INTO feed ( feed, created, user_id_fk) VALUES (:feed,:created,:user_id)";
+            $sql = "INSERT INTO inventory ( name, category, description, serial_number, status, created, user_id_fk) VALUES (:name,:category,:description,:serial_number,:status,:created,:user_id)";
             $stmt = $db->prepare($sql);
-            $stmt->bindParam("feed", $feed, PDO::PARAM_STR);
+            $stmt->bindParam("name", $name, PDO::PARAM_STR);
+            $stmt->bindParam("category", $category, PDO::PARAM_STR);
+            $stmt->bindParam("serial_number", $serial_number, PDO::PARAM_STR);
             $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam("description", $description, PDO::PARAM_STR);
+            $stmt->bindParam("status", $status, PDO::PARAM_STR);
+            $created = time();
+            $stmt->bindParam("created", $created, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $sql1 = "SELECT * FROM inventory WHERE user_id_fk=:user_id ORDER BY item_id DESC LIMIT 1";
+            $stmt1 = $db->prepare($sql1);
+            $stmt1->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt1->execute();
+            $feedData = $stmt1->fetch(PDO::FETCH_OBJ);
+
+            $db = null;
+            echo '{"feedData": ' . json_encode($feedData) . '}';
+        } else{
+            echo '{"error":{"text":"No access"}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+
+}
+
+function createAduan(){
+
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $title=$data->title;
+    $kategori=$data->kategori;
+    $masalah=$data->masalah;
+    $token=$data->token;
+    $status="pending";
+    
+    $systemToken=apiToken($user_id);
+   
+    try {
+         
+        if($systemToken == $token){
+         
+            
+            $feedData = '';
+            $db = getDB();
+            $sql = "INSERT INTO aduan ( title, kategori, masalah, status, created, user_id_fk) VALUES (:title,:kategori,:masalah,:status,:created,:user_id)";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("title", $title, PDO::PARAM_STR);
+            $stmt->bindParam("kategori", $kategori, PDO::PARAM_STR);
+            $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam("masalah", $masalah, PDO::PARAM_STR);
+            $stmt->bindParam("status", $status, PDO::PARAM_STR);
             $created = time();
             $stmt->bindParam("created", $created, PDO::PARAM_INT);
             $stmt->execute();
             
 
 
-            $sql1 = "SELECT * FROM feed WHERE user_id_fk=:user_id ORDER BY feed_id DESC LIMIT 1";
+            $sql1 = "SELECT * FROM aduan WHERE user_id_fk=:user_id ORDER BY aduan_id DESC LIMIT 1";
             $stmt1 = $db->prepare($sql1);
             $stmt1->bindParam("user_id", $user_id, PDO::PARAM_INT);
             $stmt1->execute();
@@ -317,14 +499,44 @@ function feedUpdate(){
 
 }
 
-
-
-function feedDelete(){
+function deleteInventory(){
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
     $user_id=$data->user_id;
     $token=$data->token;
-    $feed_id=$data->feed_id;
+    $item_id=$data->item_id;
+    
+    $systemToken=apiToken($user_id);
+   
+    try {
+        if($systemToken == $token){
+            $feedData = '';
+            $db = getDB();
+            $sql = "Delete FROM inventory WHERE user_id_fk=:user_id AND item_id=:item_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam("item_id", $item_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+           
+            $db = null;
+            echo '{"success":{"text":"Item deleted"}}';
+        } else{
+            echo '{"error":{"text":"No access for this user"}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }   
+    
+}
+
+function deleteAduan(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $aduan_id=$data->aduan_id;
     
     $systemToken=apiToken($user_id);
    
@@ -333,15 +545,15 @@ function feedDelete(){
         if($systemToken == $token){
             $feedData = '';
             $db = getDB();
-            $sql = "Delete FROM feed WHERE user_id_fk=:user_id AND feed_id=:feed_id";
+            $sql = "Delete FROM aduan WHERE user_id_fk=:user_id AND aduan_id=:aduan_id";
             $stmt = $db->prepare($sql);
             $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
-            $stmt->bindParam("feed_id", $feed_id, PDO::PARAM_INT);
+            $stmt->bindParam("aduan_id", $aduan_id, PDO::PARAM_INT);
             $stmt->execute();
             
            
             $db = null;
-            echo '{"success":{"text":"Feed deleted"}}';
+            echo '{"success":{"text":"Aduan deleted"}}';
         } else{
             echo '{"error":{"text":"No access"}}';
         }
@@ -351,6 +563,115 @@ function feedDelete(){
     }   
     
 }
+
+function getUserRole($user_id){
+    try {
+        $db = getDB();
+        $sql = "SELECT role FROM users WHERE user_id=:user_id";
+        $stmt = $db->prepare($sql);
+        $stmt->bindParam("user_id", $user_id,PDO::PARAM_STR);
+        $stmt->execute();
+        $userDetails = $stmt->fetch(PDO::FETCH_OBJ);
+        $role = $userDetails->role;
+        $db = null;
+        return $role;
+        
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+}
+
+function updateInventory(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $item_id=$data->item_id;
+    $name=$data->name;
+    $description=$data->description;
+    $serial_number=$data->serial_number;
+    $status=$data->status;
+    $systemToken=apiToken($user_id);
+
+    $role = getUserRole($user_id);
+
+    // if($role=="admin"){
+
+        try {
+         
+            if($systemToken == $token){
+                $feedData = '';
+                $db = getDB();
+                $sql = "UPDATE inventory SET status=:status, name=:name, description=:description, serial_number=:serial_number WHERE item_id=:item_id";
+                $stmt = $db->prepare($sql);
+                $stmt->bindParam("item_id", $item_id, PDO::PARAM_INT);
+                $stmt->bindParam("status", $status, PDO::PARAM_STR);
+                $stmt->bindParam("description", $description, PDO::PARAM_STR);
+                $stmt->bindParam("serial_number", $serial_number, PDO::PARAM_STR);
+                $stmt->bindParam("name", $name, PDO::PARAM_STR);
+                $stmt->execute();
+               
+                $sql1 = "SELECT * FROM inventory WHERE item_id=:item_id ORDER BY item_id DESC LIMIT 1";
+                $stmt1 = $db->prepare($sql1);
+                $stmt1->bindParam("item_id", $item_id, PDO::PARAM_INT);
+                $stmt1->execute();
+                $feedData = $stmt1->fetch(PDO::FETCH_OBJ);
+
+                $db = null;
+                echo '{"success":{"text":"Inventory updated", "feedData":'. json_encode($feedData). '}}';
+            } else{
+                echo '{"error":{"text":"No access"}}';
+            }
+           
+        } catch(PDOException $e) {
+            echo '{"error":{"text":'. $e->getMessage() .'}}';
+        }   
+
+    // } else {
+    //     echo '{"error":{"text":"User is not authorized"}}';
+    // }
+}
+
+function updateAduan(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $aduan_id=$data->aduan_id;
+    $status=$data->status;
+    
+    $systemToken=apiToken($user_id);
+
+    $role = getUserRole($user_id);
+
+    if($role=="admin"){
+
+        try {
+         
+            if($systemToken == $token){
+                $feedData = '';
+                $db = getDB();
+                $sql = "UPDATE aduan SET status=:status WHERE aduan_id=:aduan_id";
+                $stmt = $db->prepare($sql);
+                $stmt->bindParam("aduan_id", $aduan_id, PDO::PARAM_INT);
+                $stmt->bindParam("status", $status, PDO::PARAM_STR);
+                $stmt->execute();
+               
+                $db = null;
+                echo '{"success":{"text":"Aduan updated"}}';
+            } else{
+                echo '{"error":{"text":"No access"}}';
+            }
+           
+        } catch(PDOException $e) {
+            echo '{"error":{"text":'. $e->getMessage() .'}}';
+        }   
+
+    } else {
+        echo '{"error":{"text":"User is not authorized"}}';
+    }
+}
+
 $app->post('/userImage','userImage'); /* User Details */
 function userImage(){
     $request = \Slim\Slim::getInstance()->request();
